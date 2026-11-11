@@ -24,7 +24,23 @@ preview 仅预览静态文件，不提供开发 API 代理。要联调构建结�
 
 ## Cloudflare Pages
 
-连接独立前端仓库，根目录留空，构建命令 npm ci && npm run build，输出目录 build，Node 版本 24。不要选需要 Workers 的服务器适配器。
+在 Cloudflare 控制台进入 Workers & Pages → Create application → Pages → Connect to Git，连接 RainbowLand6/linlipin-web。必须使用 Pages 的 Git 集成入口；Workers 的导入仓库入口会运行 Wrangler 自动配置，把本项目误改为服务端 SvelteKit 应用。
+
+| 设置 | 值 |
+| --- | --- |
+| 项目类型 | Pages |
+| 生产分支 | main |
+| 框架预设 | None / 无，自定义构建 |
+| 根目录 | 留空，使用仓库根目录 |
+| 构建命令 | npm ci && npm run build |
+| 构建输出目录 | build |
+| 环境变量 NODE_VERSION | 24 |
+
+Pages Git 集成会自动发布构建输出，无需填写 `npx wrangler deploy` 或任何 Workers 部署命令。仓库中的 wrangler.json 用 pages_build_output_dir 明确标识静态 Pages 输出；如果使用不同的 Pages 项目名，将 name 改成实际项目名。此项目没有 Worker 入口、Cloudflare 服务端适配器或 worker-configuration.d.ts。
+
+若日志出现 `Configuring project for SvelteKit with "sv add"`，随后构建变为 `wrangler types --check && vite build` 并报 `Types file not found at worker-configuration.d.ts`，说明 Workers 自动配置介入了构建。保留失败项目用于排查，从 Pages 入口连接本仓库并按上表部署；添加空类型文件不能纠正部署类型。GitHub 的正常构建命令应仍为 `vite build && node scripts/security-headers.mjs`，产物在 build，而不是 .svelte-kit/cloudflare。
+
+参考：[Pages Git 集成](https://developers.cloudflare.com/pages/get-started/git-integration/)、[Pages Wrangler 配置](https://developers.cloudflare.com/pages/functions/wrangler-configuration/)。
 
 在 Pages 构建环境配置 VITE_API_BASE_URL=https://api.example.com，绑定自定义域名 https://group.example.com。后端配置 PUBLIC_BASE_URL=https://group.example.com、API_BASE_URL=https://api.example.com、ALLOWED_ORIGINS=https://group.example.com、COOKIE_SECURE=true。Cookie 保存在 API 主机，所有 API 请求携带 credentials。
 
