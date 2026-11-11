@@ -4,7 +4,7 @@ import adapter from '@sveltejs/adapter-static'
 import { loadEnv } from 'vite'
 export default defineConfig({
   plugins: [
-    sveltekit({ adapter: adapter({ pages: 'build', assets: 'build', fallback: '200.html', strict: true }) })
+    sveltekit({ adapter: adapter({ pages: 'build', assets: 'build', fallback: 'index.html', strict: true }) })
   ],
   server: {
     proxy: {

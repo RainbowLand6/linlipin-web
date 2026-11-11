@@ -42,10 +42,24 @@ export function clearSession() {
   session.update((s) => ({ me: null, ready: true, csrf: '', epoch: s.epoch + 1 }))
   updatePending()
 }
+async function responseJson(response: Response) {
+  try {
+    return await response.json()
+  } catch {
+    throw new ApiError(response.status, 'INVALID_RESPONSE', '服务暂时不可用，请稍后重试。')
+  }
+}
 export async function csrf() {
-  const res = await fetch(apiUrl('/auth/csrf'), { credentials: 'include', cache: 'no-store' })
+  let res: Response
+  try {
+    res = await fetch(apiUrl('/auth/csrf'), { credentials: 'include', cache: 'no-store' })
+  } catch {
+    throw new ApiError(0, 'NETWORK', '网络未连通，请检查网络后重试。')
+  }
   if (!res.ok) throw new Error('无法建立安全会话，请稍后重试。')
-  const data = await res.json()
+  const data = await responseJson(res)
+  if (!data || typeof data.token !== 'string' || !data.token)
+    throw new ApiError(res.status, 'INVALID_RESPONSE', '服务暂时不可用，请稍后重试。')
   session.update((s) => ({ ...s, csrf: data.token }))
 }
 export async function api<T>(
@@ -100,7 +114,7 @@ export async function api<T>(
     )
   }
   if (response.status === 204) return undefined as T
-  return response.json()
+  return responseJson(response)
 }
 export async function startup() {
   try {

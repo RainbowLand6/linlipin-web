@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { get } from 'svelte/store'
-import { api, ApiError, command, session, unresolved, clearSession } from './api'
+import { api, ApiError, command, session, unresolved, clearSession, csrf } from './api'
 const me = {
   id: '1',
   community_id: '1',
@@ -15,17 +15,39 @@ beforeEach(() => {
   session.set({ me, ready: true, csrf: 'x'.repeat(43), epoch: 0 })
 })
 describe('command recovery', () => {
+  it('shows a friendly error when a static host returns HTML instead of API JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<!doctype html><title>Pages</title>')))
+    await expect(api('/auth/me')).rejects.toMatchObject({
+      code: 'INVALID_RESPONSE',
+      message: '服务暂时不可用，请稍后重试。'
+    })
+    await expect(csrf()).rejects.toMatchObject({
+      code: 'INVALID_RESPONSE',
+      message: '服务暂时不可用，请稍后重试。'
+    })
+    expect(get(session).csrf).toBe('x'.repeat(43))
+  })
+  it('rejects a missing CSRF token without corrupting the existing session', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}')))
+    await expect(csrf()).rejects.toMatchObject({ code: 'INVALID_RESPONSE' })
+    expect(get(session).csrf).toBe('x'.repeat(43))
+  })
+  it('shows a friendly error when establishing a session fails offline', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    await expect(csrf()).rejects.toMatchObject({
+      code: 'NETWORK',
+      message: '网络未连通，请检查网络后重试。'
+    })
+  })
   it('preserves the server retry delay for login throttling', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ code: 'LOGIN_BUSY', message: '系统繁忙，请稍后再试' }), {
-            status: 503,
-            headers: { 'Retry-After': '2' }
-          })
-        )
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ code: 'LOGIN_BUSY', message: '系统繁忙，请稍后再试' }), {
+          status: 503,
+          headers: { 'Retry-After': '2' }
+        })
+      )
     )
     await expect(api('/auth/login', { method: 'POST', body: {} })).rejects.toMatchObject({
       status: 503,

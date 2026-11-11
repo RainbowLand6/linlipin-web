@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-const html = await readFile('build/200.html', 'utf8')
+const html = await readFile('build/index.html', 'utf8')
 const hashes = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(
   (m) => "'sha256-" + createHash('sha256').update(m[1]).digest('base64') + "'"
 )

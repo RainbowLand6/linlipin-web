@@ -1,6 +1,6 @@
 # 邻里拼前端
 
-SvelteKit 3 + Svelte 5 + TypeScript，关闭 SSR，adapter-static 输出 build/200.html，动态路由由浏览器渲染。可将此目录独立上传为 GitHub 仓库。
+SvelteKit 3 + Svelte 5 + TypeScript，关闭 SSR，adapter-static 输出 build/index.html，动态路由由浏览器渲染。可将此目录独立上传为 GitHub 仓库。
 
 ## 本地启动
 
@@ -46,7 +46,11 @@ Pages Git 集成会自动发布构建输出，无需填写 `npx wrangler deploy`
 
 使用七牛时再设置 VITE_PUBLIC_MEDIA_ORIGIN 与 VITE_PRIVATE_MEDIA_ORIGIN 为准确 HTTPS 来源。VITE_ 是公开配置，禁止放密钥、数据库密码或邀请码。变更这些值后必须重新构建。
 
-static/_redirects 提供深层路由到 /200.html 的回退。构建脚本按实际启动脚本生成 CSP 哈希与来源白名单，写入 build/_headers；带指纹资源缓存一年。不要用会自动改写 HTML/内联脚本的优化功能破坏 CSP 哈希。无 Pages Functions、服务端路由或前端数据库连接。
+使用 Pages 原生 SPA 回退：产物包含根 index.html，不生成根 404.html，也不配置全路径 _redirects。Pages 会将未匹配静态文件的地址交给根页面，图标和脚本仍按文件路径提供。不要添加 `/* /200.html 200`：Pages 的 HTML 扩展名规范化会使 /200 回到自身，连静态资源也进入跳转循环。构建脚本按实际启动脚本生成 CSP 哈希与来源白名单，写入 build/_headers；带指纹资源缓存一年。不要用会自动改写 HTML/内联脚本的优化功能破坏 CSP 哈希。无 Pages Functions、服务端路由或前端数据库连接。
+
+生产环境需要在构建前设置 VITE_API_BASE_URL，并重新部署。留空仅适用于本地开发代理或已配置同源 /api 的站点；纯静态 Pages 不会自动把 /api 转发到 Go 后端。七天会话使用 SameSite=Lax 的 HttpOnly Cookie，前端与 API 应使用同一主域名下的 HTTPS 域名；pages.dev 与自己的 API 域名跨站，不能作为可靠的登录会话部署方式。
+
+本项目约定正式前端为 https://pindan.luhg.cn，API 为 https://pdapi.luhg.cn。Pages 构建环境设置 VITE_API_BASE_URL=https://pdapi.luhg.cn；Go 部署时设置 PUBLIC_BASE_URL=https://pindan.luhg.cn、API_BASE_URL=https://pdapi.luhg.cn、ALLOWED_ORIGINS=https://pindan.luhg.cn、COOKIE_SECURE=true。这两个域名当前用于旧项目，需等 Go 迁移和部署验证完成后再切换；pages.dev 可用于检查静态页面，但不能代替正式域名下的登录验收。
 
 登录默认七天固定有效期，记住密码单独交给浏览器密码管理器；应用存储只保存手机号和偏好。浏览器是否允许保存/自动填充由浏览器设置和用户决定。临时密码不进入凭据库。
 
