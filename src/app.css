@@ -772,6 +772,9 @@ form label.image-picker {
   opacity: 0.55;
   cursor: not-allowed;
 }
+.image-upload-feedback {
+  scroll-margin-block: 90px;
+}
 .load-more {
   display: grid;
   justify-items: center;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, tick } from 'svelte'
   import { api, apiList, command, community, errorText } from '#lib/api.ts'
   import type { Product, ProductInput, Media, PoolItem } from '#lib/types.ts'
   import Modal from './Modal.svelte'
@@ -36,10 +36,13 @@
     imageURL = '',
     poolCount = 10,
     imageName = '',
+    imageError = '',
+    imageNotice = '',
     selectedId = '',
     publication: Product | null = null,
     duplicateWarning = false,
     queryApplied = false
+  let imageErrorElement: HTMLParagraphElement | undefined
   $: resetSearch(search)
   function resetSearch(_search: string) {
     count = 10
@@ -88,6 +91,8 @@
     imageId = p?.image_id
     imageURL = resolveMediaUrl(p?.image_url)
     imageName = ''
+    imageError = ''
+    imageNotice = ''
     editing = true
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -97,7 +102,8 @@
     target.value = ''
     if (!file) return
     busy = true
-    error = ''
+    imageError = ''
+    imageNotice = ''
     try {
       const compressed = await compressImage(file, 'PRODUCT')
       const body = new FormData()
@@ -107,9 +113,11 @@
       imageId = media.id
       imageURL = resolveMediaUrl(media.url)
       imageName = file.name
-      success = '图片已上传，保存商品后绑定。'
+      imageNotice = '图片已上传，保存商品后生效。'
     } catch (e) {
-      error = errorText(e)
+      imageError = errorText(e)
+      await tick()
+      imageErrorElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     } finally {
       busy = false
     }
@@ -373,6 +381,12 @@
             class="image-picker-input"
             id="product-image"
             aria-label="商品图片"
+            aria-invalid={imageError ? 'true' : undefined}
+            aria-describedby={imageError
+              ? 'product-image-error'
+              : imageNotice
+                ? 'product-image-notice'
+                : undefined}
             type="file"
             accept="image/jpeg,image/png"
             on:change={upload}
@@ -387,6 +401,17 @@
             ></span
           >
         </label>
+        {#if imageError}<p
+            bind:this={imageErrorElement}
+            id="product-image-error"
+            class="notice error image-upload-feedback"
+            role="alert"
+          >
+            {imageError}
+          </p>
+        {:else if imageNotice}<p id="product-image-notice" class="micro muted" role="status">
+            {imageNotice}
+          </p>{/if}
         <div class="actions">
           <button class="btn primary">{busy ? '处理中…' : '保存'}</button>
         </div>
