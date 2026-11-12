@@ -6,6 +6,7 @@
   import { draft } from '#lib/basket.ts'
   import Icon from '#lib/components/Icon.svelte'
   import Confirm from '#lib/components/Confirm.svelte'
+  import BackToTop from '#lib/components/BackToTop.svelte'
   let error = ''
   const navigation = [
     { to: '/', label: '首页', icon: 'home' },
@@ -15,6 +16,7 @@
   ]
   $: publicPage = ['/me'].includes($page.url.pathname) || /^\/(c|g)\//.test($page.url.pathname)
   $: path = $page.url.pathname
+  $: showBackToTop = ['/', '/orders', '/products', '/me/products', '/groups'].includes(path)
   $: title =
     path === '/products/select'
       ? '发布'
@@ -95,7 +97,7 @@
       </div>
       {#if $session.me?.display_name}<span class="account-link">{$session.me.display_name}</span>{/if}
     </header>
-    <main id="main">
+    <main id="main" tabindex="-1">
       {#if error}<p class="notice error" role="alert">
           {error}<button class="btn" on:click={load}>重试连接</button>
         </p>{:else if !$session.ready}<p class="empty" role="status">
@@ -129,3 +131,6 @@
       >{nav.label}</a
     >{/each}
 </nav>
+{#if showBackToTop && $session.me && !$session.me.must_change_password}
+  {#key path}<BackToTop />{/key}
+{/if}

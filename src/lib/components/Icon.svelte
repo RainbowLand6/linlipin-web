@@ -13,7 +13,7 @@
   stroke-linecap="round"
   stroke-linejoin="round"
   aria-hidden="true"
-  >{#if name === 'trash'}<path
+  >{#if name === 'arrow-up'}<path d="M12 20V4m-7 7 7-7 7 7" />{:else if name === 'trash'}<path
       d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"
     />{:else if name === 'home'}<path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z" />{:else if name === 'cart'}<path
       d="M2 3h3l3 12h11l3-9H6M9 20h.01M18 20h.01"
