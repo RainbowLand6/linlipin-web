@@ -10,15 +10,17 @@
   import { compressImage } from '#lib/compressImage.ts'
   import { resolveMediaUrl } from '#lib/urls.ts'
   import Icon from './Icon.svelte'
+  import LoadMore from './LoadMore.svelte'
   import { goto } from '$app/navigation'
   export let selecting = false
+  export let published = false
   let products: Product[] = [],
     pools: PoolItem[] = [],
     search = '',
     error = '',
     success = '',
     busy = false,
-    count = 5,
+    count = 10,
     editing = false,
     id = '',
     version = 0,
@@ -32,11 +34,16 @@
     unit = '',
     imageId: string | undefined,
     imageURL = '',
-    poolCount = 5,
+    poolCount = 10,
+    imageName = '',
     selectedId = '',
     publication: Product | null = null,
     duplicateWarning = false,
     queryApplied = false
+  $: resetSearch(search)
+  function resetSearch(_search: string) {
+    count = 10
+  }
   $: shown = products.filter((p) => p.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   $: selected = products.find((p) => p.id === selectedId)
   $: myPools = pools.filter((p) => p.owner_id === $session.me?.id)
@@ -51,7 +58,7 @@
     error = ''
     try {
       ;[products, pools] = await Promise.all([
-        apiList<Product>(community + '/products'),
+        published ? Promise.resolve([]) : apiList<Product>(community + '/products'),
         apiList<PoolItem>(community + '/pool-items')
       ])
       const editId = $page.url.searchParams.get('edit')
@@ -80,6 +87,7 @@
     unit = p?.unit_price_cent ? (p.unit_price_cent / 100).toFixed(2) : ''
     imageId = p?.image_id
     imageURL = resolveMediaUrl(p?.image_url)
+    imageName = ''
     editing = true
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -98,6 +106,7 @@
       const media = await api<Media>(community + '/media', { method: 'POST', body })
       imageId = media.id
       imageURL = resolveMediaUrl(media.url)
+      imageName = file.name
       success = '图片已上传，保存商品后绑定。'
     } catch (e) {
       error = errorText(e)
@@ -123,7 +132,7 @@
         throw new Error('请检查商品名称、容量和起订量。')
       if (
         (await confirmation(
-          !id ? '保存到商品库' : '确认保存修改',
+          !id ? '保存' : '确认保存修改',
           kind === 'pool'
             ? '保存此件的商品信息，已被认购无法修改。'
             : '只保存本人商品模板，不会发布到拼单池，已发布的商品保持原样。'
@@ -213,7 +222,7 @@
 
 {#if selecting}
   <div class="page-head">
-    <div><h1>新增</h1></div>
+    <div><h1>发布</h1></div>
     <a class="btn" href="/">返回首页</a>
   </div>
   <div class="actions">
@@ -236,12 +245,15 @@
     /></label
   >
   <LoadState loading={busy && !products.length}>
-    {#if !products.length}<div class="empty card">
-        商品库还是空的，请先新增商品。保存后会回到这里，不会自动发布。
-      </div>{/if}{#if products.length && !shown.length}<p class="empty card">
-        没有找到匹配商品，请更换关键词。
-      </p>{/if}
-    {#each shown.slice(0, count) as p (p.id)}<section class="card">
+    {#if !shown.length}<div class="empty card">
+        <p>
+          {products.length
+            ? '没有找到匹配商品，可以新增商品后再发布。'
+            : '商品库还是空的，请先新增商品。保存后会回到这里，不会自动发布。'}
+        </p>
+        <a class="btn primary" href="/products?new=1&return=/products/select">去新增</a>
+      </div>{/if}
+    {#each shown.slice(0, count) as p (p.id)}<section class="card library-product">
         <div class="row">
           <label class="library-choice"
             ><input bind:group={selectedId} type="radio" name="product" value={p.id} disabled={busy} /><span
@@ -252,9 +264,12 @@
           ><a class="btn" href={'/products?edit=' + p.id + '&return=/products/select'}>编辑</a>
         </div>
       </section>{/each}
-    {#if count < shown.length}<div class="actions">
-        <button class="btn" on:click={() => (count += 5)}>再显示 5 条</button>
-      </div>{/if}
+    <LoadMore
+      shown={Math.min(count, shown.length)}
+      total={shown.length}
+      disabled={busy}
+      more={() => (count += 10)}
+    />
     <section class="submit-bar" aria-label="发布所选商品">
       <div><strong>{selected?.name || '请选择一个商品'}</strong><small>仅点击发布后才进入拼单池</small></div>
       <button class="btn primary" disabled={busy || !selected} on:click={() => selected && publish(selected)}
@@ -264,8 +279,15 @@
   </LoadState>
 {:else}
   <div class="page-head">
-    <div><h1>我的商品库</h1></div>
-    <button class="btn primary" disabled={busy} on:click={() => edit()}>新增商品</button>
+    <div><h1>{published ? '我发布的商品' : '我的商品库'}</h1></div>
+    {#if published}<button
+        class="btn"
+        disabled={busy}
+        on:click={load}
+        aria-label="刷新商品状态"
+        title="刷新商品状态"><Icon /></button
+      >
+    {:else}<button class="btn primary" disabled={busy} on:click={() => edit()}>新增商品</button>{/if}
   </div>
   {#if error && !duplicateWarning}<p class="notice error" role="alert">{error}</p>{/if}{#if returnTo}<div
       class="actions"
@@ -274,11 +296,15 @@
     </div>{/if}{#if success}<p class="notice success" role="status">{success}</p>{/if}
   {#if editing}<form novalidate class="card editor" on:submit|preventDefault={save}>
       <div class="row">
-        <h2>{!id ? '新增商品' : kind === 'pool' ? '编辑未订件' : '编辑模板'}</h2>
+        <h2>{!id ? '新增商品' : '编辑'}</h2>
         <button class="btn" type="button" disabled={busy} on:click={() => (editing = false)}>收起</button>
       </div>
       <fieldset disabled={busy}>
-        <label>商品名称<input bind:value={name} required maxlength="100" /></label><label
+        <label
+          ><span class="field-label" id="product-name-label"
+            ><span class="required-mark" aria-hidden="true">*</span>商品名称</span
+          ><input bind:value={name} required maxlength="100" aria-labelledby="product-name-label" /></label
+        ><label
           >备注（选填）<textarea
             bind:value={remark}
             maxlength="500"
@@ -286,128 +312,159 @@
         >
         <div class="form-pair">
           <label
-            >整件采购价（元）<input
+            ><span class="field-label" id="product-purchase-label"
+              ><span class="required-mark" aria-hidden="true">*</span>整件采购价（元）</span
+            ><input
               bind:value={purchase}
               inputmode="decimal"
               required
               placeholder="0.00"
+              aria-labelledby="product-purchase-label"
             /></label
           ><label
-            >一件可分多少份<input
+            ><span class="field-label" id="product-capacity-label"
+              ><span class="required-mark" aria-hidden="true">*</span>一件可分多少份</span
+            ><input
               bind:value={capacity}
               type="number"
               min="1"
               max="9999"
               step="1"
               required
+              aria-labelledby="product-capacity-label"
             /></label
           >
         </div>
         <div class="form-pair">
           <label
-            >最少起订份数<input
+            ><span class="field-label" id="product-minimum-label"
+              ><span class="required-mark" aria-hidden="true">*</span>最少起订份数</span
+            ><input
               bind:value={minimum}
               type="number"
               min="1"
               max={capacity}
               step="1"
               required
+              aria-labelledby="product-minimum-label"
             /></label
           ><label
-            >每份价格方式<select bind:value={mode}
-              ><option value="AUTO">自动均分 · 服务端四舍五入</option><option value="MANUAL">手动单价</option
-              ></select
+            ><span class="field-label" id="product-mode-label"
+              ><span class="required-mark" aria-hidden="true">*</span>每份价格方式</span
+            ><select bind:value={mode} required aria-labelledby="product-mode-label"
+              ><option value="AUTO">自动均分·四舍五入</option><option value="MANUAL">手动单价</option></select
             ></label
           >
         </div>
         {#if mode === 'MANUAL'}<label
-            >每份单价（元）<input bind:value={unit} inputmode="decimal" required placeholder="0.00" /></label
+            ><span class="field-label" id="product-unit-label"
+              ><span class="required-mark" aria-hidden="true">*</span>每份单价（元）</span
+            ><input
+              bind:value={unit}
+              inputmode="decimal"
+              required
+              placeholder="0.00"
+              aria-labelledby="product-unit-label"
+            /></label
           >{/if}
-        <label
-          >JPEG / PNG 商品单图（≤5MiB、800万像素，自动压缩到最长边1600、≤512KiB（小于1MB））<input
+        <label for="product-image">商品图片</label>
+        <label class="image-picker" class:has-image={!!imageURL}>
+          <input
+            class="image-picker-input"
+            id="product-image"
+            aria-label="商品图片"
             type="file"
             accept="image/jpeg,image/png"
             on:change={upload}
-          /></label
-        >{#if imageURL}<img class="upload-preview" src={imageURL} alt="待保存商品图" />{/if}
-        <p class="micro muted">图片先上传，成功保存后绑定商品；未选择新图时保留原图。</p>
+          />
+          {#if imageURL}<img class="image-picker-preview" src={imageURL} alt="待保存商品图" />{:else}<span
+              class="image-picker-symbol"
+              aria-hidden="true">＋</span
+            >{/if}
+          <span class="image-picker-copy"
+            ><strong>{imageURL ? '更换图片' : '选择图片'}</strong><small
+              >{imageName || (imageURL ? '已选择商品图片' : '点击上传商品图片')}</small
+            ></span
+          >
+        </label>
         <div class="actions">
-          <button class="btn primary">{busy ? '处理中…' : !id ? '保存到商品库' : '确认保存'}</button>
+          <button class="btn primary">{busy ? '处理中…' : '保存'}</button>
         </div>
       </fieldset>
     </form>{/if}
-  <LoadState loading={busy && !products.length && !editing}>
-    <label class="search-label"
-      ><span>搜索我的商品库</span><input
-        bind:value={search}
-        type="search"
-        placeholder="输入商品名，支持模糊搜索"
-      /></label
-    >
-    <h2 class="section-title">我的商品库 <small>{shown.length}</small></h2>
-    {#if !products.length}<div class="empty card">
-        尚未创建商品，新增商品并保存到商品库后，可选择发布。
-      </div>{/if}{#if products.length && !shown.length}<p class="empty card">
-        没有找到匹配商品，请更换关键词。
-      </p>{/if}
-    {#each shown.slice(0, count) as p (p.id)}<section class="card">
-        <div class="row">
-          <div>
-            <h2>{p.name}</h2>
-            {#if p.remark}<p class="muted preserve">{p.remark}</p>{/if}<small
-              >采购 {money(p.purchase_price_cent)} · {p.capacity} 份/件 · {p.min_quantity} 份起 · 每份 {money(
-                p.unit_price_cent
-              )}</small
-            >
-          </div>
-          <span class="pill">{p.price_mode === 'AUTO' ? '自动均分' : '手动单价'}</span>
-        </div>
-        <div class="actions">
-          <button class="btn" disabled={busy} on:click={() => edit(p)}>编辑模板</button><button
-            class="btn primary"
-            disabled={busy}
-            on:click={() => publish(p)}>发布到拼单池</button
-          >
-        </div>
-      </section>{/each}
-    <div class="actions">
-      {#if count < shown.length}<button class="btn" on:click={() => (count += 5)}>再显示 5 条</button
-        >{/if}{#if count > 5}<button class="btn" on:click={() => (count = 5)}>收起</button>{/if}
-    </div>
-    <h2 class="section-title">我发布的商品</h2>
-    {#if !myPools.length}<div class="empty card">暂无已发布商品。</div>{/if}
-    {#each myPools.slice(0, poolCount) as p (p.id)}<section class="card">
-        <div class="row">
-          <div>
-            <h2>{p.name} <small>第 {p.item_no} 件</small></h2>
-            <small>{p.reserved_quantity}/{p.capacity} 份 · {money(p.unit_price_cent)}/份</small>
-          </div>
-          <span class="pill">{statuses[p.status]}</span>
-        </div>
-        {#if p.status === 'POOL'}<div class="actions">
-            <button class="btn" disabled={busy || p.ever_ordered} on:click={() => edit(p, true)}
-              >编辑此件</button
-            >{#if p.ever_ordered}<span class="micro muted">已被认购无法修改</span>{/if}<button
-              class="btn danger"
-              disabled={busy}
-              on:click={() => cancel(p)}
-              aria-label="删除"
-              title="删除"><Icon name="trash" /></button
-            >
-          </div>{/if}
-      </section>{/each}
-    <div class="actions">
-      {#if poolCount < myPools.length}<button class="btn" on:click={() => (poolCount += 5)}
-          >再显示 5 条</button
-        >{/if}{#if poolCount > 5}<button class="btn" on:click={() => (poolCount = 5)}>收起</button
-        >{/if}<button
-        class="btn"
-        disabled={busy}
-        on:click={load}
-        aria-label="刷新商品状态"
-        title="刷新商品状态"><Icon /></button
+  <LoadState loading={busy && !(published ? pools.length : products.length) && !editing}>
+    {#if !published}
+      <label class="search-label"
+        ><span>搜索我的商品库</span><input
+          bind:value={search}
+          type="search"
+          placeholder="输入商品名，支持模糊搜索"
+        /></label
       >
-    </div>
+      <h2 class="section-title">我的商品库 <small>{shown.length}</small></h2>
+      {#if !shown.length}<div class="empty card">
+          <p>
+            {products.length
+              ? '没有找到匹配商品，可以新增一个商品。'
+              : '尚未创建商品，新增并保存后即可发布。'}
+          </p>
+          <a class="btn primary" href="/products?new=1" on:click={() => edit()}>去新增</a>
+        </div>{/if}
+      {#each shown.slice(0, count) as p (p.id)}<section class="card library-product">
+          <div class="row">
+            <div>
+              <h2>{p.name}</h2>
+              {#if p.remark}<p class="muted preserve">{p.remark}</p>{/if}<small
+                >采购 {money(p.purchase_price_cent)} · {p.capacity} 份/件 · {p.min_quantity} 份起 · 每份 {money(
+                  p.unit_price_cent
+                )}</small
+              >
+            </div>
+            <span class="pill">{p.price_mode === 'AUTO' ? '自动均分' : '手动单价'}</span>
+          </div>
+          <div class="actions">
+            <button class="btn" disabled={busy} on:click={() => edit(p)}>编辑</button><button
+              class="btn primary"
+              disabled={busy}
+              on:click={() => publish(p)}>发布到拼单池</button
+            >
+          </div>
+        </section>{/each}
+      <LoadMore
+        shown={Math.min(count, shown.length)}
+        total={shown.length}
+        disabled={busy}
+        more={() => (count += 10)}
+      />
+    {:else}
+      {#if !myPools.length}<div class="empty card">暂无已发布商品。</div>{/if}
+      {#each myPools.slice(0, poolCount) as p (p.id)}<section class="card published-product">
+          <div class="row">
+            <div>
+              <h2>{p.name} <small>第 {p.item_no} 件</small></h2>
+              <small>{p.reserved_quantity}/{p.capacity} 份 · {money(p.unit_price_cent)}/份</small>
+            </div>
+            <span class="pill">{statuses[p.status]}</span>
+          </div>
+          {#if p.status === 'POOL'}<div class="actions">
+              <button class="btn" disabled={busy || p.ever_ordered} on:click={() => edit(p, true)}
+                >编辑此件</button
+              >{#if p.ever_ordered}<span class="micro muted">已被认购无法修改</span>{/if}<button
+                class="btn danger"
+                disabled={busy}
+                on:click={() => cancel(p)}
+                aria-label="删除"
+                title="删除"><Icon name="trash" /></button
+              >
+            </div>{/if}
+        </section>{/each}
+      <LoadMore
+        shown={Math.min(poolCount, myPools.length)}
+        total={myPools.length}
+        disabled={busy}
+        more={() => (poolCount += 10)}
+      />
+    {/if}
   </LoadState>{/if}
 <Modal open={duplicateWarning} title="拼单池中已有同名商品" {busy} close={() => (duplicateWarning = false)}
   ><p class="muted">可以查看已有商品，也可以仍发布一个独立新件。不会修改已发布商品。</p>

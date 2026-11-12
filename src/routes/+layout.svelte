@@ -17,32 +17,34 @@
   $: path = $page.url.pathname
   $: title =
     path === '/products/select'
-      ? '新增'
+      ? '发布'
       : path === '/products'
         ? '我的商品库'
-        : path === '/me/profile'
-          ? '个人信息管理'
-          : path === '/me/invite'
-            ? '社区入会邀请'
-            : path === '/admin/reset'
-              ? '管理员重置密码'
-              : path === '/orders/pending'
-                ? '待成团认购'
-                : path.startsWith('/orders/')
-                  ? '成交订单详情'
-                  : path === '/orders'
-                    ? '我的订单'
-                    : path.startsWith('/pool/')
-                      ? '商品详情'
-                      : /^\/groups\/[^/]+\/share$/.test(path)
-                        ? '分享本次团购'
-                        : path.startsWith('/groups/')
-                          ? '团长管理'
-                          : path.startsWith('/c/')
-                            ? '社区邀请'
-                            : path.startsWith('/g/')
-                              ? '团单信息'
-                              : (navigation.find((n) => n.to === path)?.label ?? '邻里拼')
+        : path === '/me/products'
+          ? '我发布的商品'
+          : path === '/me/profile'
+            ? '个人信息管理'
+            : path === '/me/invite'
+              ? '社区入会邀请'
+              : path === '/admin/reset'
+                ? '管理员重置密码'
+                : path === '/orders/pending'
+                  ? '待成团认购'
+                  : path.startsWith('/orders/')
+                    ? '成交订单详情'
+                    : path === '/orders'
+                      ? '我的订单'
+                      : path.startsWith('/pool/')
+                        ? '商品详情'
+                        : /^\/groups\/[^/]+\/share$/.test(path)
+                          ? '分享本次团购'
+                          : path.startsWith('/groups/')
+                            ? '团长管理'
+                            : path.startsWith('/c/')
+                              ? '社区邀请'
+                              : path.startsWith('/g/')
+                                ? '团单信息'
+                                : (navigation.find((n) => n.to === path)?.label ?? '邻里拼')
   $: back = /^\/groups\/[^/]+\/share$/.test(path)
     ? path.replace(/\/share$/, '')
     : path.startsWith('/groups/')

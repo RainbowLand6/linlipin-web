@@ -388,7 +388,7 @@
           aria-hidden="true">›</span
         ></a
       >
-      {#each [{ href: '/orders', label: '我的订单' }, { href: '/products', label: '我的商品库' }, { href: '/me/invite', label: '社区入会邀请' }] as link}<a
+      {#each [{ href: '/orders', label: '我的订单' }, { href: '/products', label: '我的商品库' }, { href: '/me/products', label: '我发布的商品' }, { href: '/me/invite', label: '社区入会邀请' }] as link}<a
           class="account-row"
           href={link.href}
           ><span>{link.label}</span><span class="account-chevron" aria-hidden="true">›</span></a

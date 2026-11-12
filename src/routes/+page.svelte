@@ -9,10 +9,16 @@
   import Stepper from '#lib/components/Stepper.svelte'
   import { goto } from '$app/navigation'
   import LoadState from '#lib/components/LoadState.svelte'
+  import LoadMore from '#lib/components/LoadMore.svelte'
   import type { PoolItem } from '#lib/types.ts'
   let search = '',
     error = '',
-    busy = false
+    busy = false,
+    count = 10
+  $: resetSearch(search)
+  function resetSearch(_search: string) {
+    count = 10
+  }
   $: items = $pool.filter(
     (p) =>
       p.status === 'POOL' &&
@@ -72,7 +78,7 @@
     <div class="actions">
       <button class="btn" disabled={busy} aria-label="刷新" title="刷新" on:click={() => load()}
         ><Icon /></button
-      ><a class="btn primary" href="/products/select">新增</a>
+      ><a class="btn primary" href="/products/select">发布</a>
     </div>
   </div>
   {#if $pendingBasket}<p class="notice" role="status">
@@ -92,11 +98,15 @@
     loading={busy}
     {error}
     empty={!items.length}
-    emptyText="暂时没有可拼商品。可以发布一件好物，邀请邻居一起拼。"
+    emptyText={search.trim()
+      ? '没有找到匹配商品，可以发布一件好物，邀请邻居一起拼。'
+      : '暂时没有可拼商品。可以发布一件好物，邀请邻居一起拼。'}
+    emptyAction="去发布"
+    emptyHref="/products/select"
     retry={() => load()}
   >
     <div class="home-pools">
-      {#each items as item (item.id)}
+      {#each items.slice(0, count) as item (item.id)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
         <article
           class="card home-pool product-clickable"
@@ -141,8 +151,14 @@
               >{/if}<Stepper {item} disabled={busy} />
           </div>
         </article>{/each}
-    </div></LoadState
-  >
+    </div>
+    <LoadMore
+      shown={Math.min(count, items.length)}
+      total={items.length}
+      disabled={busy}
+      more={() => (count += 10)}
+    />
+  </LoadState>
   {#if !busy}<section class="submit-bar home-submit" aria-label="购物车摘要">
       <strong>{Object.keys($draft).length} 件商品 · {money(total)}</strong><a class="btn primary" href="/cart"
         >结算</a

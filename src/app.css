@@ -669,6 +669,128 @@ textarea {
   min-height: 90px;
   resize: vertical;
 }
+select {
+  appearance: none;
+  min-height: 46px;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23173f35' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+select:hover:not(:disabled) {
+  border-color: #9aaf9c;
+}
+select:focus-visible {
+  border-color: var(--green);
+  outline: 0;
+  box-shadow: 0 0 0 3px #173f351a;
+}
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+select option {
+  color: var(--green);
+  background: var(--paper);
+}
+.field-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.required-mark {
+  color: #b32929;
+  font-weight: 700;
+}
+form label.image-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px dashed #9aaf9c;
+  border-radius: 12px;
+  background: var(--paper);
+  cursor: pointer;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.image-picker:hover,
+.image-picker:focus-within {
+  border-color: var(--green);
+  background: var(--soft);
+}
+.image-picker:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.image-picker-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.image-picker-symbol {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--soft);
+  font-size: 28px;
+  font-weight: 400;
+}
+.image-picker-preview {
+  width: 76px;
+  height: 76px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 9px;
+}
+.image-picker-copy {
+  min-width: 0;
+}
+.image-picker-copy strong,
+.image-picker-copy small {
+  display: block;
+}
+.image-picker-copy small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.image-picker:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.load-more {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 20px 0 28px;
+}
+.load-more small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.empty .btn {
+  margin-top: 14px;
+}
+@media (max-width: 639px) {
+  .editor .form-pair {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
 .form-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
