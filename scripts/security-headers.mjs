@@ -22,6 +22,7 @@ const { loadEnv } = await import('vite')
 const env = loadEnv('production', process.cwd(), 'VITE_')
 const api = origin(env.VITE_API_BASE_URL),
   media = [env.VITE_PUBLIC_MEDIA_ORIGIN, env.VITE_PRIVATE_MEDIA_ORIGIN].filter(Boolean).map(origin)
+if (!api) throw new Error('VITE_API_BASE_URL is required for the static Pages production build')
 const csp = [
   "default-src 'none'",
   "base-uri 'self'",
