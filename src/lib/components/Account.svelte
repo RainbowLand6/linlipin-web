@@ -1,7 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { ApiError, session, api, authenticate, clearSession, csrf, errorText } from '#lib/api.ts'
-  import { loginPreference, rememberLogin } from '#lib/loginMemory.ts'
+  import {
+    loginPreference,
+    rememberLogin,
+    restoreLogin,
+    forgetLogin,
+    rememberedPasswordHelp,
+    loginMemoryNotice
+  } from '#lib/loginMemory.ts'
   import { passwordError, confirmation } from '#lib/ui.ts'
   import { compressImage } from '#lib/compressImage.ts'
   import Modal from './Modal.svelte'
@@ -29,10 +36,37 @@
     repeat = '',
     nickname = '',
     avatarOpen = false
+  let restoreVersion = 0
+  async function fillRememberedLogin() {
+    const version = ++restoreVersion
+    const saved = await restoreLogin()
+    if (version !== restoreVersion || mode !== 'login' || $session.me || busy) return
+    if (saved && !password && (!phone || phone === saved.phone)) {
+      phone = saved.phone
+      password = saved.password
+      remember = true
+    }
+  }
+  function selectMode(value: 'login' | 'join') {
+    if (mode === value) return
+    restoreVersion++
+    mode = value
+    password = confirm = error = $loginMemoryNotice = ''
+    if (value === 'login') void fillRememberedLogin()
+  }
+  async function rememberChanged() {
+    restoreVersion++
+    $loginMemoryNotice = ''
+    if (!remember) {
+      if (await forgetLogin()) $loginMemoryNotice = '已清除本浏览器保存的手机号和密码。'
+      else $loginMemoryNotice = '无法清除保存的密码，请在浏览器设置中清除此网站数据。'
+    }
+  }
   $: if ($session.me && !nickname) nickname = $session.me.display_name ?? ''
   let retryUntil = 0,
     retrySeconds = 0
   onMount(() => {
+    if (!$session.me) void fillRememberedLogin()
     const timer = setInterval(() => {
       retrySeconds = Math.max(0, Math.ceil((retryUntil - Date.now()) / 1000))
     }, 250)
@@ -41,6 +75,7 @@
   async function login() {
     if (busy || retryUntil > Date.now()) return
     error = ''
+    $loginMemoryNotice = ''
     if (!/^1[3-9][0-9]{9}$/.test(phone.trim())) {
       error = '请输入正确的11位手机号。'
       return
@@ -66,6 +101,10 @@
     }
     busy = true
     const checkedPassword = password
+    const checkedPhone = phone.trim()
+    const checkedMode = mode
+    const checkedRemember = remember
+    restoreVersion++
     try {
       await authenticate(
         mode === 'join' ? '/auth/register-and-join' : '/auth/login',
@@ -79,12 +118,20 @@
             }
           : { phone: phone.trim(), password }
       )
-      if (!$session.me?.must_change_password) void rememberLogin(phone.trim(), checkedPassword, remember)
+      // Registering never persists a password; a temporary password is never remembered.
+      if (checkedMode === 'login') {
+        if ($session.me?.must_change_password) await forgetLogin()
+        else {
+          const saved = await rememberLogin(checkedPhone, checkedPassword, checkedRemember)
+          if (!saved) $loginMemoryNotice = rememberedPasswordHelp
+        }
+      }
       password = ''
       confirm = ''
       success = '已登录。'
     } catch (e) {
       error = errorText(e)
+      if (e instanceof ApiError && e.code === 'INVALID_CREDENTIALS') await forgetLogin()
       if (e instanceof ApiError && (e.status === 429 || e.code === 'LOGIN_BUSY')) {
         retrySeconds = e.retryAfter || (e.status === 429 ? 60 : 2)
         retryUntil = Date.now() + retrySeconds * 1000
@@ -144,6 +191,7 @@
           new_password: next
         }
       })
+      await forgetLogin()
       clearSession()
       current = next = repeat = ''
       success = '密码已修改，请重新登录。'
@@ -200,6 +248,7 @@
   >
     {success}
   </p>{/if}
+{#if $loginMemoryNotice}<p class="notice" role="status">{$loginMemoryNotice}</p>{/if}
 {#if !$session.me}<div class="auth-layout">
     <section class="auth-aside">
       <h2>一件好物，<br />一群好邻居。</h2>
@@ -218,18 +267,12 @@
           type="button"
           disabled={busy}
           class:active={mode === 'login'}
-          on:click={() => {
-            mode = 'login'
-            error = ''
-          }}>登录</button
+          on:click={() => selectMode('login')}>登录</button
         ><button
           type="button"
           disabled={busy}
           class:active={mode === 'join'}
-          on:click={() => {
-            mode = 'join'
-            error = ''
-          }}>注册</button
+          on:click={() => selectMode('join')}>注册</button
         >
       </div>
       {#if mode === 'join'}<label
@@ -249,6 +292,9 @@
           name="username"
           inputmode="tel"
           autocomplete="username"
+          on:input={() => {
+            restoreVersion++
+          }}
           required
           maxlength="16"
         /></label
@@ -269,6 +315,9 @@
           name="password"
           type="password"
           autocomplete={mode === 'join' ? 'new-password' : 'current-password'}
+          on:input={() => {
+            restoreVersion++
+          }}
           required
         /></label
       >
@@ -282,10 +331,19 @@
             required
           /></label
         >{/if}
-      <label class="remember-login"
-        ><input bind:checked={remember} type="checkbox" disabled={busy} />记住密码</label
-      >
-      <p class="micro muted">登录后默认保留7天。勾选后可将密码保存到浏览器，下次自动填入。</p>
+      {#if mode === 'login'}<label class="remember-login"
+          ><input
+            bind:checked={remember}
+            on:change={rememberChanged}
+            type="checkbox"
+            disabled={busy}
+          />记住密码</label
+        >
+        <p class="micro muted">
+          勾选后，登录成功会在本浏览器保存手机号和密码，下次自动填入；取消勾选会清除。请仅在个人设备使用。
+        </p>
+      {/if}
+      <p class="micro muted">登录后默认保留7天。</p>
       {#if error}<p id="auth-error" class="notice error" role="alert" aria-live="assertive">
           {error}
         </p>{/if}<button class="btn primary wide" disabled={busy || retrySeconds > 0}
@@ -298,13 +356,7 @@
               : '登录'}</button
       >
       {#if mode === 'login'}<p class="auth-switch">
-          <a
-            href="#join"
-            on:click|preventDefault={() => {
-              mode = 'join'
-              error = ''
-            }}>没有账号？去注册</a
-          >
+          <a href="#join" on:click|preventDefault={() => selectMode('join')}>没有账号？去注册</a>
         </p>{/if}
       <p class="micro muted">忘记密码请联系平台管理员。</p>
     </form>
