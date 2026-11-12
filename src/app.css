@@ -1797,3 +1797,12 @@ input[type='checkbox'] {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* iOS zooms focused fields below 16px; keep touch forms readable and pinch zoom available. */
+@media (max-width: 767px), (any-pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: max(16px, 1rem);
+  }
+}

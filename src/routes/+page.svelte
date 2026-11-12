@@ -2,6 +2,7 @@
   import { autoRefresh } from '#lib/autoRefresh.ts'
   import { onMount } from 'svelte'
   import { pool, draft, readBasket, pendingBasket } from '#lib/basket.ts'
+  import { homePools } from '#lib/poolList.ts'
   import { session, command, community, errorText } from '#lib/api.ts'
   import { money, confirmation } from '#lib/ui.ts'
   import { thumbnailUrl } from '#lib/urls.ts'
@@ -19,12 +20,7 @@
   function resetSearch(_search: string) {
     count = 10
   }
-  $: items = $pool.filter(
-    (p) =>
-      p.status === 'POOL' &&
-      p.enabled &&
-      p.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  )
+  $: items = homePools($pool, search)
   $: total = Object.values($draft).reduce((s, l) => s + l.quantity * l.item.unit_price_cent, 0)
   let reading = false
   async function load(quiet = false) {
