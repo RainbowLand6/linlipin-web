@@ -8,7 +8,7 @@ export class ApiError extends Error {
     message: string,
     public retryAfter = 0
   ) {
-    super(message)
+    super(code === 'ITEM_LOCKED' ? '已被认购无法修改' : message.replaceAll('领团', '成团'))
   }
 }
 export const session = writable<{ me: Me | null; ready: boolean; csrf: string; epoch: number }>({
