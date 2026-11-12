@@ -92,7 +92,7 @@
   }
   async function claim() {
     if (!preview || selectionStale) return
-    if ((await confirmation('确认领团', '确认后按参与人生成订单与提货号，负责线下收款及提货。')) === null)
+    if ((await confirmation('确认成团', '确认后按参与人生成订单与提货号，负责线下收款及提货。')) === null)
       return
     busy = true
     error = ''
@@ -127,11 +127,11 @@
   </div>
   {#if refreshError}<p class="notice" role="status">{refreshError}</p>{/if}
   {#if selectionStale}<p class="notice error" role="alert">
-      所选商品已被领团或认购状态发生变化。已保留填写内容，请重新选择商品并预览后确认。
+      所选商品已成团或认购状态发生变化。已保留填写内容，请重新选择商品并预览后确认。
     </p>{/if}
   {#if error}<p class="notice error" role="alert">{error}</p>{/if}
   <section class="card" class:empty-stock={!items.length}>
-    {#if !items.length}<p class="empty">暂时没有已满额、尚未领取的商品。先和邻居一起拼满吧。</p>{/if}
+    {#if !items.length}<p class="empty">暂时没有已满额、尚未成团的商品。先和邻居一起拼满吧。</p>{/if}
     {#if items.length}<button
         class="btn"
         disabled={busy}
@@ -155,15 +155,14 @@
       >{/each}
     <div class="actions">
       <button class="btn primary" disabled={!selected.length || busy} on:click={makePreview}
-        >{busy ? '处理中…' : '预览领团与订单'}</button
+        >{busy ? '处理中…' : '预览成团与订单'}</button
       >
     </div>
   </section>
   {#if preview}<form novalidate class="card" on:submit|preventDefault={claim}>
       <h2>确认本次团信息</h2>
       <div class="notice">
-        {preview.items.length} 件商品 · {preview.order_count} 份订单 · {money(preview.total_amount_cent)}<br
-        />预览不锁定商品，确认时会再次校验版本。
+        {preview.items.length} 件商品 · {preview.order_count} 份订单 · {money(preview.total_amount_cent)}
       </div>
       <label>团名称<input bind:value={title} maxlength="100" required disabled={busy} /></label><label
         >提货地点<input bind:value={location} required maxlength="200" disabled={busy} /></label

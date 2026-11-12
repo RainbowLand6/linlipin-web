@@ -44,7 +44,7 @@
 {#if error}<p class="notice error" role="alert">{error}</p>{/if}{#if order}<section class="card">
     <div class="ticket-context">
       <h2>{order.group_title}</h2>
-      <p>{order.organizer_name} 领团 · {order.location}<br />{dateTime(order.pickup_at)}</p>
+      <p>{order.organizer_name} 成团 · {order.location}<br />{dateTime(order.pickup_at)}</p>
     </div>
     <OrderTicket {order} />
   </section>{/if}

@@ -29,7 +29,7 @@
         url={data.group_url}
         title={data.group_title || data.title}
         subtitle="本次团购 · 提货与履约信息"
-        description={data.organizer_name + ' 领团 · ' + data.location + ' · ' + dateTime(data.pickup_at)}
+        description={data.organizer_name + ' 成团 · ' + data.location + ' · ' + dateTime(data.pickup_at)}
         footnote="公开团信息不包含购买者私单"
         filename="邻里拼-本次团购"
       />{:else}<QRCodePoster

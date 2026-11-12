@@ -69,11 +69,10 @@
 
 <div class="home-compact">
   <div class="page-head home-head">
-    <h1>好物一起拼</h1>
     <div class="actions">
       <button class="btn" disabled={busy} aria-label="刷新" title="刷新" on:click={() => load()}
         ><Icon /></button
-      ><a class="btn primary" href="/products/select">从我的商品库选择</a>
+      ><a class="btn primary" href="/products/select">新增</a>
     </div>
   </div>
   {#if $pendingBasket}<p class="notice" role="status">

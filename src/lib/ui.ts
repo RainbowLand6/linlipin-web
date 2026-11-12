@@ -17,7 +17,7 @@ export const statuses: Record<string, string> = {
   COMPLETED: '已完成',
   NO_DEAL: '已取消',
   POOL: '拼单中',
-  CLAIMED: '已领团',
+  CLAIMED: '已成团',
   CANCELLED: '已取消',
   FULFILLING: '履约中',
   ENDED: '已结束'

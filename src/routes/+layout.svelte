@@ -17,7 +17,7 @@
   $: path = $page.url.pathname
   $: title =
     path === '/products/select'
-      ? '从我的商品库选择'
+      ? '新增'
       : path === '/products'
         ? '我的商品库'
         : path === '/me/profile'
@@ -27,7 +27,7 @@
             : path === '/admin/reset'
               ? '管理员重置密码'
               : path === '/orders/pending'
-                ? '待领团认购'
+                ? '待成团认购'
                 : path.startsWith('/orders/')
                   ? '成交订单详情'
                   : path === '/orders'
@@ -68,7 +68,7 @@
 <a class="skip-link" href="#main">跳到内容</a>
 <div class="app-shell">
   <aside class="sidebar">
-    <a class="brand" href="/">邻里拼<span>好物一起拼，满件再领团</span></a>
+    <a class="brand" href="/">邻里拼</a>
     <nav aria-label="主导航">
       {#each navigation as nav}<a class:router-link-active={$page.url.pathname === nav.to} href={nav.to}
           ><Icon name={nav.icon} />{nav.label}{#if nav.to === '/cart' && Object.keys($draft).length}<small
@@ -101,7 +101,7 @@
         </p>{:else if !$session.me && !publicPage}<div class="welcome card">
           <span class="eyebrow">一起买，刚刚好</span>
           <h1>加入社区，一起拼单</h1>
-          <p class="muted">加入社区，发布商品、共同拼件，满件后再由邻居领团。</p>
+          <p class="muted">加入社区，发布商品、共同拼件，满件后由邻居发起成团。</p>
           <a class="btn primary" href="/me">登录 / 注册</a>
         </div>{:else if $session.me?.must_change_password && !$page.url.pathname.startsWith('/me')}<p
           class="notice"

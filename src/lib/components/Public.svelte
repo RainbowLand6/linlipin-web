@@ -49,7 +49,7 @@
     </div>
   {:else}<section class="card welcome">
       <h1>邻里拼社区</h1>
-      <p class="muted">好物一起拼，满件再领团。每位社区成员都可以发布商品、认购和领团。</p>
+      <p class="muted">好物一起拼，满件再成团。每位社区成员都可以发布商品、认购和成团。</p>
       <div class="actions">
         <a class="btn primary" href={$session.me ? '/' : '/me'}>{$session.me ? '进入社区' : '注册 / 登录'}</a>
       </div>

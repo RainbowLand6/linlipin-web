@@ -125,7 +125,7 @@
         (await confirmation(
           !id ? '保存到商品库' : '确认保存修改',
           kind === 'pool'
-            ? '保存此件的名称、图片和经济信息，认购后将锁定经济字段。'
+            ? '保存此件的商品信息，已被认购无法修改。'
             : '只保存本人商品模板，不会发布到拼单池，已发布的商品保持原样。'
         )) === null
       )
@@ -213,7 +213,7 @@
 
 {#if selecting}
   <div class="page-head">
-    <div><h1>从我的商品库选择</h1></div>
+    <div><h1>新增</h1></div>
     <a class="btn" href="/">返回首页</a>
   </div>
   <div class="actions">
@@ -387,7 +387,7 @@
         {#if p.status === 'POOL'}<div class="actions">
             <button class="btn" disabled={busy || p.ever_ordered} on:click={() => edit(p, true)}
               >编辑此件</button
-            >{#if p.ever_ordered}<span class="micro muted">已被认购，经济字段已锁定</span>{/if}<button
+            >{#if p.ever_ordered}<span class="micro muted">已被认购无法修改</span>{/if}<button
               class="btn danger"
               disabled={busy}
               on:click={() => cancel(p)}

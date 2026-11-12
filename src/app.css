@@ -475,6 +475,20 @@ progress::-moz-progress-bar {
   font-size: 11px;
   color: var(--muted);
 }
+.pending-order-summary {
+  flex-wrap: wrap;
+}
+.pending-order-summary > div {
+  flex: 1 1 160px;
+}
+.order-amount {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.pending-order-summary > .order-amount {
+  margin-left: auto;
+}
 .claim-row {
   display: flex;
   align-items: center;

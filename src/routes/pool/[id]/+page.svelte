@@ -114,7 +114,7 @@
         >{#if open}<section aria-label="拼单参与明细" class="participation-body" aria-live="polite">
             <p class="micro muted">
               {people.state === 'CLAIMED'
-                ? '已领团，以下昵称与份数来自成交订单冻结记录。'
+                ? '已成团，以下昵称与份数来自成交订单冻结记录。'
                 : people.state === 'CANCELLED'
                   ? '本件已取消。'
                   : '仅展示本件当前参与人的群昵称与份数。'}

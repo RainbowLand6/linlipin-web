@@ -37,7 +37,7 @@
       error = '正在更新认购状态，请稍后再试。'
       return
     }
-    if (q === 0 && (await confirmation('删除认购', '取消该商品的待领认购？')) === null) return
+    if (q === 0 && (await confirmation('删除认购', '取消该商品的待成团认购？')) === null) return
     busy = true
     error = ''
     try {
@@ -68,7 +68,7 @@
 </script>
 
 <div class="page-head">
-  <div><h1>待领团认购详情</h1></div>
+  <div><h1>待成团认购详情</h1></div>
   <button class="btn" disabled={busy} on:click={() => load()} aria-label="刷新认购状态" title="刷新认购状态"
     ><Icon /></button
   >
@@ -81,12 +81,12 @@
   </p>{/if}
 {#if set}<section class="card">
     {#if !set.lines.length}<p class="empty">
-        暂无待领认购。<a href="/">去首页选购</a>
+        暂无待成团认购。<a href="/">去首页选购</a>
       </p>{/if}{#each set.lines as line}<div class="subscription-line">
         <ItemThumb src={items[line.pool_item_id]?.image_url} alt={line.name} />
         <div class="subscription-line-info">
           <a href={'/pool/' + line.pool_item_id}><strong>{line.name}</strong></a><small
-            title={items[line.pool_item_id]?.can_edit_subscription ? '待领团，可修改' : '已领或不可编辑'}
+            title={items[line.pool_item_id]?.can_edit_subscription ? '待成团，可修改' : '已成团或不可编辑'}
             >{line.quantity} 份 × {money(line.unit_price_cent)}</small
           >
         </div>
